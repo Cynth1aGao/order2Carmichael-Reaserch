@@ -1,0 +1,323 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2580
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 /* Author: Andrew Shallue, May 2020\
+Constructing order 2 Carmichael numbers\
+*/\
+// Contain some code by Cynthia Gao, Summer 2021\
+#include <iostream>\
+#include <cmath>\
+#include "primality.h"\
+#include <vector>\
+#include "Factorization.h"\
+#include "enumeration.h"\
+#include <chrono>\
+\
+using namespace std;\
+using namespace NTL;\
+using namespace chrono;\
+\
+// New Runtime function created by Cynthia Gao\
+// test bound from 1000 to 20000, and bound adds 1000 each time\
+void Runtime(Factorization L) \{\
+    for (int i=1000; i<20001; i+=1000) \{\
+      int time_div = 0;\
+      int time_pri = 0;  \
+      for (int j=0; j<10; j++) \{\
+          auto start = high_resolution_clock::now(); \
+          vector<ZZ> lst = enumerate(L, to_ZZ(i));\
+          auto stop_div = high_resolution_clock::now();\
+          vector<ZZ> primes = order2_primes(lst, L); \
+          auto stop_pri = high_resolution_clock::now();\
+          auto duration_div = duration_cast<microseconds>(stop_div - start);\
+          auto duration_pri = duration_cast<microseconds>(stop_pri - stop_div);\
+          time_div += duration_div.count();\
+          time_pri += duration_pri.count();\
+      \}\
+      vector<ZZ> lst = enumerate(L, to_ZZ(i));\
+      vector<ZZ> primes = order2_primes(lst, L); \
+    \
+      cout << "When bound = " << i << ", the time for running enumerate function is " << time_div / 10 << " microseconds and the time for running order2_primes function is " << time_pri / 10 << " microseconds." << " Both functions can create " << primes.size() << " primes." << endl;\
+    \}\
+\}\
+\
+// test bound from 10^3 to 10^10, and bound times 10 each time\
+/*\
+void Runtime(Factorization L) \{\
+    for (ZZ i=to_ZZ(1000); i<100000000000; i*=10) \{\
+      int time_div = 0;\
+      int time_pri = 0;  \
+      for (int j=0; j<10; j++) \{\
+          auto start = high_resolution_clock::now(); \
+          vector<ZZ> lst = enumerate(L, to_ZZ(i));\
+          auto stop_div = high_resolution_clock::now();\
+          vector<ZZ> primes = order2_primes(lst, L); \
+          auto stop_pri = high_resolution_clock::now();\
+          auto duration_div = duration_cast<microseconds>(stop_div - start);\
+          auto duration_pri = duration_cast<microseconds>(stop_pri - stop_div);\
+          time_div += duration_div.count();\
+          time_pri += duration_pri.count();\
+      \}\
+      vector<ZZ> lst = enumerate(L, to_ZZ(i));\
+      vector<ZZ> primes = order2_primes(lst, L); \
+    \
+      cout << "When bound = " << i << ", the time for running enumerate function is " << time_div / 10 << " microseconds and the time for running order2_primes function is " << time_pri / 10 << " microseconds." << " Both functions can create " << primes.size() << " primes." << endl;\
+    \}\
+\}*/\
+\
+// code by Cynthia Gao\
+Factorization Build(vector<int> prime, vector<int> power) \{\
+    Factorization f; vector<ZZ> p; vector<ZZ> pow;\
+    if (prime.size() == power.size()) \{\
+      for(int i=0; i<prime.size(); i++) \{\
+        p.push_back(to_ZZ(prime.at(i)));\
+        pow.push_back(to_ZZ(power.at(i)));\
+      \}\
+      f = Factorization(p, pow);\
+      return f;  \
+    \}\
+    cout << "The size of prime vector should be the same as the size of power vector" << endl;\
+    return f;\
+\}\
+\
+\
+int main() \{\
+  /*\
+  // Testing Factorization on 2 * 3 * 5\
+  Factorization f; vector<ZZ> p; vector<ZZ> pow;\
+  p.push_back(to_ZZ(2));  p.push_back(to_ZZ(3));  p.push_back(to_ZZ(5));\
+  pow.push_back(to_ZZ(1)); pow.push_back(to_ZZ(1)); pow.push_back(to_ZZ(1));\
+  f = Factorization(p, pow);\
+  f.print();\
+  \
+  \
+  // Testing Factorization class on 2^5 * 11 * 41^2 * 101 = 59762912\
+  Factorization f; vector<ZZ> p; vector<ZZ> pow;\
+  p.push_back(to_ZZ(2)); p.push_back(to_ZZ(11)); p.push_back(to_ZZ(41)); p.push_back(to_ZZ(101));\
+  pow.push_back(to_ZZ(5)); pow.push_back(to_ZZ(1)); pow.push_back(to_ZZ(2)); pow.push_back(to_ZZ(1));\
+  f = Factorization(p, pow);\
+  f.print();\
+  \
+  vector<ZZ> lst = enumerate(f, to_ZZ(1000000000));\
+    \
+  print(lst);\
+  */\
+/*\
+  // code by Cynthia \
+  // Testing Build function\
+  Factorization L;\
+  vector<int> p2 = \{2, 3, 5, 7, 11, 13\};\
+  vector<int> pow2 = \{5, 2, 1, 1, 1, 1\};\
+  L = Build(p2, pow2);\
+  L.print();\
+\
+  // Testing when L = 2^6 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 23 * 29 * 31 * 37 * 41 * 43 * 47 * 53\
+  Factorization L;\
+  vector<int> p = \{2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53\};\
+  vector<int> pow = \{6, 5, 3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1\};\
+  L = Build(p, pow);\
+  L.print();\
+  cout << "When L = 2^6 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 23 * 29 * 31 * 37 * 41 * 43 * 47 * 53 " << endl;\
+  auto start = high_resolution_clock::now();    \
+  vector<ZZ> lst = enumerate(L);\
+  vector<ZZ> primes = order2_primes(lst, L); \
+  auto stop_pri = high_resolution_clock::now();\
+  auto duration_pri = duration_cast<microseconds>(stop_pri - start);\
+  int time = duration_pri.count()/ primes.size();\
+  cout << "bound 14782442285253404289528000 could create each primes by using " << time << " microseconds and could creat " << primes.size() << " primes" << endl;\
+*/  \
+  /*\
+  Factorization: ( 2, 6 )  ( 3, 5 )  ( 5, 3 )  ( 7, 2 )  ( 11, 1 )  ( 13, 1 )  ( 17, 1 )  ( 19, 1 )  ( 23, 1 )  ( 29, 1 )  ( 31, 1 )  ( 37, 1 )  ( 41, 1 )  ( 43, 1 )  ( 47, 1 )  ( 53, 1 )  \
+When L = 2^6 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 23 * 29 * 31 * 37 * 41 * 43 * 47 * 53 \
+bound 14782442285253404289528000 could create each primes by using 50801 microseconds and could creat 234 primes\
+  */\
+/*    \
+  // Testing when L = 2^5 * 11 * 41^2 * 101 = 59762912\
+  Factorization L;\
+  vector<int> p = \{2, 11, 41, 101\};\
+  vector<int> pow = \{5, 1, 2, 1\};\
+  L = Build(p, pow);\
+  L.print();\
+  cout << "L = 2^5 * 11 * 41^2 * 101" << endl;\
+  auto start = high_resolution_clock::now();    \
+  vector<ZZ> lst = enumerate(L, to_ZZ(59762912));\
+  vector<ZZ> primes = order2_primes(lst, L); \
+  auto stop_pri = high_resolution_clock::now();\
+  auto duration_pri = duration_cast<microseconds>(stop_pri - start);\
+  int time = duration_pri.count()/ primes.size();\
+  cout << "bound 59762912 could create each primes by using " << time << " microseconds and could creat " << primes.size() << " primes" << endl;\
+*/\
+  // code by Cynthia Gao\
+  // Testing Factorization on 2^5 * 3^2 * 5 * 7 * 11 * 13\
+  Factorization L; vector<ZZ> p2; vector<ZZ> pow2;\
+  p2.push_back(to_ZZ(2)); p2.push_back(to_ZZ(3)); p2.push_back(to_ZZ(5)); \
+  p2.push_back(to_ZZ(7)); p2.push_back(to_ZZ(11)); p2.push_back(to_ZZ(13));\
+  pow2.push_back(to_ZZ(5)); pow2.push_back(to_ZZ(2)); pow2.push_back(to_ZZ(1));\
+  pow2.push_back(to_ZZ(1)); pow2.push_back(to_ZZ(1)); pow2.push_back(to_ZZ(1));\
+\
+  L = Factorization(p2, pow2); \
+  L.print();\
+  cout << "When L = 2^5 * 3^2 * 5 * 7 * 11 * 13 " << endl;\
+  Runtime(L);\
+\
+/*\
+  //This is the new line added by Cynthia to calculate the time for generating\
+  auto start = high_resolution_clock::now();\
+  vector<ZZ> lst = enumerate(L, to_ZZ(1000000000));\
+  /*\
+  cout << "All divisors of L less than the bound: \\n";\
+  cout << lst.size() << endl;\
+  print(lst);\
+  cout << "\\n"; \
+  */\
+/*\
+  //new lines added by Cynthia \
+  auto stop_div = high_resolution_clock::now();\
+  auto duration_div = duration_cast<microseconds>(stop_div - start);\
+  cout << "The time for generating divisors bound to 1000000000 is " << duration_div.count() << " microseconds and for each divisor, the time for generating is " << duration_div.count()/ lst.size()  << " microseconds "<< endl;\
+\
+  vector<ZZ> primes = order2_primes(lst, L);\
+  //cout << "primes p such that p^2-1 | L \\n";\
+  //print(primes);\
+  //cout << "prime size: " << primes.size() << endl;\
+  //new lines added by Cynthia \
+  auto stop_pri = high_resolution_clock::now();\
+  auto duration_pri = duration_cast<microseconds>(stop_pri - start);\
+  int each_prime_onethousand = duration_pri.count() / primes.size();\
+  cout << "The time for generating primes bound to 1000000000 is " << duration_pri.count() << " microseconds and for each prime, the time for generating is " << each_prime_onethousand << " microseconds"<< endl;\
+*/\
+\
+// Testing Factorization on 2^7 * 3^3 * 5^2 * 7 * 11 * 13 * 17 * 19 * 29\
+  Factorization L2; vector<ZZ> p3; vector<ZZ> pow3;\
+  p3.push_back(to_ZZ(2)); p3.push_back(to_ZZ(3)); p3.push_back(to_ZZ(5)); \
+  p3.push_back(to_ZZ(7)); p3.push_back(to_ZZ(11)); p3.push_back(to_ZZ(13));\
+  p3.push_back(to_ZZ(17)); p3.push_back(to_ZZ(19)); p3.push_back(to_ZZ(29));\
+  pow3.push_back(to_ZZ(7)); pow3.push_back(to_ZZ(3)); pow3.push_back(to_ZZ(2));\
+  pow3.push_back(to_ZZ(1)); pow3.push_back(to_ZZ(1)); pow3.push_back(to_ZZ(1));\
+  pow3.push_back(to_ZZ(1)); pow3.push_back(to_ZZ(1)); pow3.push_back(to_ZZ(1));\
+\
+  L2 = Factorization(p3, pow3);\
+  L2.print();\
+  cout << "When L = 2^7 * 3^3 * 5^2 * 7 * 11 * 13 * 17 * 19 * 29 " << endl;\
+  Runtime(L2);\
+ \
+// Testing Factorization on 2^7 * 3^3 * 5^2 * 7 * 11 * 13 * 17 * 19 * 29 * 31\
+  Factorization L3; vector<ZZ> p4; vector<ZZ> pow4;\
+  p4.push_back(to_ZZ(2)); p4.push_back(to_ZZ(3)); p4.push_back(to_ZZ(5)); \
+  p4.push_back(to_ZZ(7)); p4.push_back(to_ZZ(11)); p4.push_back(to_ZZ(13));\
+  p4.push_back(to_ZZ(17)); p4.push_back(to_ZZ(19)); p4.push_back(to_ZZ(29)); p4.push_back(to_ZZ(31));\
+  pow4.push_back(to_ZZ(7)); pow4.push_back(to_ZZ(3)); pow4.push_back(to_ZZ(2));\
+  pow4.push_back(to_ZZ(1)); pow4.push_back(to_ZZ(1)); pow4.push_back(to_ZZ(1));\
+  pow4.push_back(to_ZZ(1)); pow4.push_back(to_ZZ(1)); pow4.push_back(to_ZZ(1)); pow4.push_back(to_ZZ(1));\
+\
+  L3 = Factorization(p4, pow4);\
+  L3.print();\
+  cout << "When L = 2^7 * 3^3 * 5^2 * 7 * 11 * 13 * 17 * 19 * 29 * 31 " << endl;\
+  Runtime(L3);\
+    \
+// Testing Factorization on 2^7 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 29 * 31 \
+  Factorization L4; vector<ZZ> p5; vector<ZZ> pow5;\
+  p5.push_back(to_ZZ(2)); p5.push_back(to_ZZ(3)); p5.push_back(to_ZZ(5)); \
+  p5.push_back(to_ZZ(7)); p5.push_back(to_ZZ(11)); p5.push_back(to_ZZ(13));\
+  p5.push_back(to_ZZ(17)); p5.push_back(to_ZZ(19)); p5.push_back(to_ZZ(29)); p5.push_back(to_ZZ(31));\
+  pow5.push_back(to_ZZ(7)); pow5.push_back(to_ZZ(5)); pow5.push_back(to_ZZ(3));\
+  pow5.push_back(to_ZZ(2)); pow5.push_back(to_ZZ(1)); pow5.push_back(to_ZZ(1));\
+  pow5.push_back(to_ZZ(1)); pow5.push_back(to_ZZ(1)); pow5.push_back(to_ZZ(1)); pow5.push_back(to_ZZ(1));\
+\
+  L4 = Factorization(p5, pow5);\
+  L4.print();\
+  cout << "When L = 2^7 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 29 * 31 " << endl;\
+  Runtime(L4);    \
+   \
+// Testing Factorization on 2^7 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 29 * 31 * 37\
+  Factorization L5; vector<ZZ> p6; vector<ZZ> pow6;\
+  p6.push_back(to_ZZ(2)); p6.push_back(to_ZZ(3)); p6.push_back(to_ZZ(5)); \
+  p6.push_back(to_ZZ(7)); p6.push_back(to_ZZ(11)); p6.push_back(to_ZZ(13));\
+  p6.push_back(to_ZZ(17)); p6.push_back(to_ZZ(19)); p6.push_back(to_ZZ(29)); p6.push_back(to_ZZ(31));\
+  p6.push_back(to_ZZ(37));\
+  pow6.push_back(to_ZZ(7)); pow6.push_back(to_ZZ(5)); pow6.push_back(to_ZZ(3));\
+  pow6.push_back(to_ZZ(2)); pow6.push_back(to_ZZ(1)); pow6.push_back(to_ZZ(1));\
+  pow6.push_back(to_ZZ(1)); pow6.push_back(to_ZZ(1)); pow6.push_back(to_ZZ(1)); pow6.push_back(to_ZZ(1));\
+  pow6.push_back(to_ZZ(1));\
+  L5 = Factorization(p6, pow6);\
+  L5.print();\
+  cout << "When L = 2^7 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 29 * 31 * 37 " << endl;\
+  Runtime(L5);     \
+    \
+// Testing Factorization on 2^7 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 29 * 31 * 37 * 41\
+  Factorization L6; vector<ZZ> p7; vector<ZZ> pow7;\
+  p7.push_back(to_ZZ(2)); p7.push_back(to_ZZ(3)); p7.push_back(to_ZZ(5)); \
+  p7.push_back(to_ZZ(7)); p7.push_back(to_ZZ(11)); p7.push_back(to_ZZ(13));\
+  p7.push_back(to_ZZ(17)); p7.push_back(to_ZZ(19)); p7.push_back(to_ZZ(29)); p7.push_back(to_ZZ(31));\
+  p7.push_back(to_ZZ(37)); p7.push_back(to_ZZ(41));\
+  pow7.push_back(to_ZZ(7)); pow7.push_back(to_ZZ(5)); pow7.push_back(to_ZZ(3));\
+  pow7.push_back(to_ZZ(2)); pow7.push_back(to_ZZ(1)); pow7.push_back(to_ZZ(1));\
+  pow7.push_back(to_ZZ(1)); pow7.push_back(to_ZZ(1)); pow7.push_back(to_ZZ(1)); pow7.push_back(to_ZZ(1));\
+  pow7.push_back(to_ZZ(1)); pow7.push_back(to_ZZ(1));\
+  L6 = Factorization(p7, pow7);\
+  L6.print();\
+  cout << "When L = 2^7 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 29 * 31 * 37 * 41 " << endl;\
+  Runtime(L6);    \
+\
+// Testing Factorization on 2^11 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 29 * 31 * 37 * 41\
+  Factorization L7; vector<ZZ> p8; vector<ZZ> pow8;\
+  p8.push_back(to_ZZ(2)); p8.push_back(to_ZZ(3)); p8.push_back(to_ZZ(5)); \
+  p8.push_back(to_ZZ(7)); p8.push_back(to_ZZ(11)); p8.push_back(to_ZZ(13));\
+  p8.push_back(to_ZZ(17)); p8.push_back(to_ZZ(19)); p8.push_back(to_ZZ(29)); p8.push_back(to_ZZ(31));\
+  p8.push_back(to_ZZ(37)); p8.push_back(to_ZZ(41));\
+  pow8.push_back(to_ZZ(11)); pow8.push_back(to_ZZ(5)); pow8.push_back(to_ZZ(3));\
+  pow8.push_back(to_ZZ(2)); pow8.push_back(to_ZZ(1)); pow8.push_back(to_ZZ(1));\
+  pow8.push_back(to_ZZ(1)); pow8.push_back(to_ZZ(1)); pow8.push_back(to_ZZ(1)); pow8.push_back(to_ZZ(1));\
+  pow8.push_back(to_ZZ(1)); pow8.push_back(to_ZZ(1));\
+  L7 = Factorization(p8, pow8);\
+  L7.print();\
+  cout << "When L = 2^11 * 3^5 * 5^3 * 7^2 * 11 * 13 * 17 * 19 * 29 * 31 * 37 * 41 " << endl;\
+  Runtime(L7); \
+    \
+    \
+    \
+  /* Testing of previous code from primality and Factorization\
+\
+  cout << is_prime_trialdivision(to_ZZ(14039), to_ZZ(23)) << "\\n";\
+  cout << is_prime_trialdivision(to_ZZ(14039), to_ZZ(120)) << "\\n";\
+\
+  cout << f.factorProduct() << "\\n";\
+  cout << f.validFactorization() << "\\n";\
+  f.print();\
+  f.addPrime(to_ZZ(103));\
+  f.print();\
+  f.addPrime(to_ZZ(2));\
+  f.print();\
+  \
+  cout << "\\n";\
+  cout << "Testing primality related algorithms\\n";\
+  cout << "Is 101 prime? " << ProbPrime(101) << "\\n";\
+  cout << "Is 1001 prime? " << ProbPrime(1001) << "\\n";\
+  cout << "Is 8 prime? " << ProbPrime(8) << "\\n";\
+  cout << "Factoring 30030: \\n";\
+  f = trial_factor_complete(to_ZZ(30030 * 13));\
+  f.print();\
+\
+  cout << "\\n";\
+  cout << "Testing getter functions which are now pointers\\n";\
+  const vector<ZZ>* ps = f.getPrimes();\
+  cout << ps->at(0) << "\\n";\
+\
+  cout << "\\n";\
+  cout << "Testing ZZ version of Pocklington\\n";\
+  for (ZZ n = to_ZZ(2); n < to_ZZ(20000); n++) \{\
+	  if (n % 10000 == 0) \{\
+		  cout << "checkpoint: " << n << "\\n";\
+	  \}\
+	  if (ProbPrime(n) != pocklington(n, trial_factor_complete(n - 1))) \{\
+		  cout << n << "\\n";\
+	  \}\
+  \}\
+  \
+*/\
+\}\
+}
