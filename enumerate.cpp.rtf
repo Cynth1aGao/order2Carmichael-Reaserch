@@ -1,0 +1,198 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2580
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 /* Iterative version of enumerate function\
+Summer 2021\
+Cynthia Gao */\
+\
+#include <iostream>\
+#include <vector>\
+#include <algorithm>\
+#include "enumeration.h"\
+#include "Factorization.h"\
+#include "NTL/ZZ.h"\
+#include <bits/stdc++.h>\
+#include <cmath>\
+using namespace std;\
+using namespace NTL;\
+//code by Cynthia to compute a^e\
+ZZ Helper_power(ZZ a, ZZ e) \{\
+	ZZ i, power = to_ZZ(1);\
+	if(e == 0) \{\
+		return to_ZZ(1);\
+	\}\
+	for(i=1; i<=e; i++) \{\
+		power = power * a;\
+	\}\
+	return power;\
+\}\
+\
+//function created by Cynthia Gao\
+//Helper function called Helper_next\
+//Input: a vector of global pow, and a vector of current pow\
+//Output: a vector of next_current pow\
+//Strategy: \'93odometer\'94\
+\
+vector<ZZ> Helper_next(vector<ZZ> global_list, vector<ZZ>& current_list, vector<ZZ> primes, ZZ bound, int index) \{   \
+	//check wether the digit at that index of current is less than the digit of global\
+	//if it is, the digit in current list plus one\
+	if (current_list.at(index) < global_list.at(index)) \{\
+		//add one to the number at that index\
+		current_list.at(index) += 1;\
+		ZZ divisor = to_ZZ(1);\
+		//loop through pr and start_list to calculate the divisor \
+		for(int i=0; i<primes.size(); i++) \{\
+			divisor *= Helper_power(primes.at(i), current_list.at(i));\
+		\}\
+	//if divisor less than bound, return the current list\
+		if(divisor <= bound) \{\
+			return current_list;\
+		\}  \
+	\}\
+	//if it is not, assign it to zero and check wether the digit at next index less than that of global number and so on\
+	current_list.at(index) = 0;\
+	if(index == current_list.size() - 1) \{\
+		return current_list;\
+	\}\
+	int next_index = index + 1;\
+	//go through the current_list to find the first digit in the current list less than the digit in the global list\
+	while (next_index < current_list.size() && current_list.at(next_index) >= global_list.at(next_index)) \{\
+		//if current_list digit equals to the digit in the global list, set it to be 0\
+		current_list.at(next_index) = 0;\
+		next_index++;\
+	\}\
+	if(next_index == current_list.size()) \{\
+		return current_list;\
+	\}\
+	//Add one to the first digit in the current list less than the digit in the global list\
+	current_list.at(next_index) += 1;\
+	ZZ divisor = to_ZZ(1);\
+	//loop through pr and start_list to calculate the divisor \
+	for(int i=0; i<primes.size(); i++) \{\
+		divisor *= Helper_power(primes.at(i), current_list.at(i));\
+	\}\
+	//if divisor less than bound, return the current list\
+	if(divisor <= bound) \{\
+		return current_list;\
+	\}\
+	//else, set the number of that digit at i to be 0\
+	else \{\
+		current_list.at(next_index) = 0;\
+		if(next_index == current_list.size() - 1) \{\
+			return current_list;\
+		\}\
+		//call Helper_next recursively starting from index = i+1\
+		return Helper_next(global_list, current_list, primes, bound, next_index + 1); \
+	\}\
+\}\
+\
+// iterative version of enumerate function\
+// code by Cynthia Gao\
+vector<ZZ> enumerate(Factorization factors, ZZ bound) \{   \
+	//return vector with results\
+	vector<ZZ> divisors;\
+	//de-reference to access elements of primes and powers\
+	vector<ZZ>* pr = factors.getPrimes();\
+	vector<ZZ>* pw = factors.getPowers();\
+	int pw_size = pw->size();\
+	vector<ZZ> start_list;\
+	//Create the start vector \
+	for(int i=0; i<pw_size; i++) \{\
+		start_list.push_back(to_ZZ(0));\
+	\}\
+	vector<ZZ> first_list;\
+	//Create the start vector \
+	for(int i=0; i<pw_size; i++) \{\
+		first_list.push_back(to_ZZ(0));\
+	\}\
+	first_list = Helper_next(*pw, first_list, *pr, bound, 0);\
+	//loop repeatly until the contents in start list equal to those in first list\
+	while (!(first_list == start_list)) \{\
+		ZZ divisor = to_ZZ(1);\
+		//loop through pr and first_list to calculate the divisor \
+		for(int i=0; i<pw_size; i++) \{\
+			divisor *= Helper_power(pr->at(i), first_list.at(i));\
+		\}\
+		divisors.push_back(divisor);\
+		first_list = Helper_next(*pw, first_list, *pr, bound, 0);\
+	\}\
+    divisors.push_back(to_ZZ(1));\
+	//sort(divisors.begin(), divisors.end());\
+    //cout << divisors.size() << endl;\
+	return divisors;\
+\}\
+\
+// returns True if all entries are 0.  False otherwise.\
+bool all_zero(vector<ZZ> input)\{\
+  bool result = 1;\
+  for(int i=0; i<input.size(); i++) \{\
+    if(input.at(i) != 0) \{\
+      result = 0;\
+    \}\
+  \}\
+  return result;\
+\}\
+\
+\
+\
+/*\
+// A edited iterative version of Helper_next and enumerate functions without bound\
+// code by Cynthia\
+vector<ZZ> Helper_next(vector<ZZ> global_list, vector<ZZ> current_list) \{\
+  //check wether the digit at that index of current is less than the digit of global\
+  // check if adding to the current index causes problems\
+  // do this using a while loop\
+  int index = 0;\
+  while(index < current_list.size() && current_list.at(index) == global_list.at(index))\{\
+    current_list.at(index) = 0;\
+    index++;\
+  \}\
+  // if index is off the end of the list, that means I'm done\
+  if(index == current_list.size())\{\
+    return current_list;\
+  \}\
+  // if not done, add one to working_list at the index\
+  else\{\
+    current_list.at(index) = current_list.at(index) + 1;\
+    return current_list;\
+  \}\
+\}\
+\
+\
+vector<ZZ> enumerate(Factorization factors) \{   \
+	//return vector with results\
+	vector<ZZ> divisors;\
+	//de-reference to access elements of primes and powers\
+	vector<ZZ>* pr = factors.getPrimes();\
+	vector<ZZ>* pw = factors.getPowers();\
+	int pw_size = pw->size();\
+	vector<ZZ> start_list;\
+	//Create the start vector \
+	for(int i=0; i<pw_size; i++) \{\
+		start_list.push_back(to_ZZ(0));\
+	\}\
+	vector<ZZ> first_list;\
+	//Create the start vector \
+	for(int i=0; i<pw_size; i++) \{\
+		first_list.push_back(to_ZZ(0));\
+	\}\
+	first_list = Helper_next(*pw, first_list);\
+	//loop repeatly until the contents in start list equal to those in first list\
+	while (!(first_list == start_list)) \{\
+		ZZ divisor = to_ZZ(1);\
+		//loop through pr and first_list to calculate the divisor \
+		for(int i=0; i<pw_size; i++) \{\
+			divisor *= Helper_power(pr->at(i), first_list.at(i));\
+		\}\
+		divisors.push_back(divisor);\
+		first_list = Helper_next(*pw, first_list);\
+	\}\
+    divisors.push_back(to_ZZ(1));\
+	//sort(divisors.begin(), divisors.end());\
+	return divisors;\
+\}\
+*/}
